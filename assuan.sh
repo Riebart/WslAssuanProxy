@@ -12,11 +12,14 @@ fi
 echo "WSL1 Distro: $v1Distro"
 echo "WSL2 Distro: $v2Distro"
 
+ip_a_v1=$(wsl.exe -d "$v1Distro" --cd / ip a & pid="$!"; sleep 1; kill "$pid" 2>/dev/null)
+ip_a_v2=$(wsl.exe -d "$v2Distro" --cd / ip a & pid="$!"; sleep 1; kill "$pid" 2>/dev/null)
+
 # The common broadcast indicates a common network CIDR block shared.
 # The two distros will have different addresses on the block, but will both be on at least one block.
 wslCommonBroadcast=$(comm -12 \
-    <(wsl.exe -d "$v1Distro" --cd / ip a | grep -o "brd [0-9.]*255" | sort) \
-    <(wsl.exe -d "$v2Distro" --cd / ip a | grep -o "brd [0-9.]*255" | sort) | cut -d ' ' -f2)
+    <(echo "$ip_a_v1" | grep -o "brd [0-9.]*255" | sort) \
+    <(echo "$ip_a_v2" | grep -o "brd [0-9.]*255" | sort) | cut -d ' ' -f2)
 
 # The common address we want is the host one, or rather that used by WSL1.
 wslCommonAddress=$(wsl.exe -d "$v1Distro" --cd / ip a | grep "$wslCommonBroadcast" | grep -o "inet [0-9.]*" | cut -d ' ' -f2)
